@@ -23,7 +23,8 @@ def crawl_news(keywords: list):
     start = (current_time - timedelta(hours=4)).strftime("%Y.%m.%d.%H.%M")
     end = current_time.strftime("%Y.%m.%d.%H.%M")
 
-    entire_news_titles = set()
+    duplicated = set()
+    news_data = []
     for keyword in keywords:
         url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=0&photo=0&field=0&pd=10&ds={start}&de={end}&docid=&related=0&mynews=1&office_type=3&office_section_code=&news_office_checked=&nso=so%3Ar%2Cp%3Aall&is_sug_officeid=0&office_category=1&service_area=0"
         driver.get(url)
@@ -33,7 +34,7 @@ def crawl_news(keywords: list):
         prev_height = driver.execute_script("return document.body.scrollHeight")
         while True:
             body.send_keys(Keys.PAGE_DOWN)
-            time.sleep(4)
+            time.sleep(2)
 
             now_height = driver.execute_script("return document.body.scrollHeight")
             if prev_height == now_height:
@@ -42,15 +43,37 @@ def crawl_news(keywords: list):
         # parsing when the scroll down is finished
         soup = BeautifulSoup(driver.page_source, "lxml")
 
-        # get the news titles
-        news_titles = {title.text.strip() for title in soup.select(".news_tit") if title.text and keyword in title.text}
-        entire_news_titles.update(news_titles)
-        
+        # get the news data
+        news_items = soup.select(".news_area")
+        for item in news_items:
+            title_element = item.select_one(".news_tit")
+            title = title_element.text.strip() if title_element else "No title"
+            link = title_element["href"] if title_element else "No link"
+
+            publisher, date = "No publisher", "No date"
+            info_element = item.select_one(".info_group")
+
+            if info_element:
+                publisher = info_element.find_all("a")[0].text.strip()
+                info_spans = info_element.find_all("span", class_="info")
+                if info_spans:
+                    date = info_spans[-1].text.strip() # First element from back is a date
+
+            if title not in duplicated:
+                duplicated.add(title)
+                news_data.append({
+                    "title": title,
+                    "link": link,
+                    "publisher": publisher,
+                    "date": date,
+                    "keyword": keyword
+                })
+
     driver.quit()
-    return list(entire_news_titles)
+    return news_data
 
 @app.get("/")
 def get_news():
     keywords = ["탄핵", "尹", "헌재"]
     results = crawl_news(keywords)
-    return {"keywords": keywords, "news_titles": results}
+    return {"results": results}
