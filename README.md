@@ -1,2 +1,2 @@
-# WinterProject - Web Crawler
-## 2024-01-19 ~ 2024-??-?? : Making background about Crawler
+# WinterProject - 계엄 관련 뉴스 수집기
+
