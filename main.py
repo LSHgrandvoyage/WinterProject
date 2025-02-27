@@ -1,6 +1,7 @@
 import time
 from datetime import datetime, timedelta
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
@@ -8,6 +9,7 @@ from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # crawler function
 def crawl_news(keywords: list):
@@ -59,6 +61,7 @@ def crawl_news(keywords: list):
                 if info_spans:
                     date = info_spans[-1].text.strip() # First element from back is a date
 
+            # News contents should be unique
             if title not in duplicated:
                 duplicated.add(title)
                 news_data.append({
@@ -73,7 +76,7 @@ def crawl_news(keywords: list):
     return news_data
 
 @app.get("/")
-def get_news():
+def get_news(request: Request):
     keywords = ["탄핵", "尹", "헌재"]
     results = crawl_news(keywords)
-    return {"results": results}
+    return templates.TemplateResponse("homepage.html", {"request": request, "news_list": results})

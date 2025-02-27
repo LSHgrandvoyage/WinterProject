@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계엄 뉴스 수집기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .news-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-link {
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #007BFF;
+        }
+        .news-link:hover {
+            text-decoration: underline;
+        }
+        .news-meta {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>관련 뉴스</h1>
+        {% for news in news_list %}
+        <div class="news-item">
+            <a href="{{ news.link }}" class="news-link" target="_blank">{{ news.title }}</a>
+            <div class="news-meta">
+                {{ news.publisher }} | {{ news.date }} | keyword: {{ news.keyword }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
