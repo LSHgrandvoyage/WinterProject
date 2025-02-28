@@ -11,37 +11,46 @@ from bs4 import BeautifulSoup
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# crawler function
-def crawl_news(keywords: list):
-    # Set the Chrome driver options
+def set_chrome_driver(): # Set the Chrome driver options
     options = Options()
-    options.add_argument("--headless") # Optimization 1, Don't print the browser on my screen
-    options.add_argument("--disable-gpu") # Optimization 2
-    options.add_argument("--disable-extensions") # Optimization 3
-    driver = webdriver.Chrome(options=options)
+    options.add_argument("--headless")  # Optimization 1, Don't print the browser on my screen
+    options.add_argument("--disable-gpu")  # Optimization 2
+    options.add_argument("--disable-extensions")  # Optimization 3
+    return webdriver.Chrome(options=options)
 
-    # time calculation to set the finding time
+def set_time(): # time calculation to set the finding time
     current_time = datetime.now()
     start = (current_time - timedelta(hours=4)).strftime("%Y.%m.%d.%H.%M")
     end = current_time.strftime("%Y.%m.%d.%H.%M")
+    return start, end
+
+def scroll_down_bottom(url, driver):
+    driver.get(url)
+    body = driver.find_element(By.TAG_NAME, "body")
+    prev_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        body.send_keys(Keys.PAGE_DOWN)
+        time.sleep(1)
+
+        now_height = driver.execute_script("return document.body.scrollHeight")
+        if prev_height == now_height:
+            break
+
+        prev_height = now_height
+
+# main function
+def main(keywords: list):
+    driver = set_chrome_driver()
+    start, end = set_time()
 
     duplicated = set()
     news_data = []
     for keyword in keywords:
         url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=0&photo=0&field=0&pd=10&ds={start}&de={end}&docid=&related=0&mynews=1&office_type=3&office_section_code=&news_office_checked=&nso=so%3Ar%2Cp%3Aall&is_sug_officeid=0&office_category=1&service_area=0"
-        driver.get(url)
 
         # Scroll down until no more news exist
-        body = driver.find_element(By.TAG_NAME, "body")
-        prev_height = driver.execute_script("return document.body.scrollHeight")
-        while True:
-            body.send_keys(Keys.PAGE_DOWN)
-            time.sleep(2)
+        scroll_down_bottom(url, driver)
 
-            now_height = driver.execute_script("return document.body.scrollHeight")
-            if prev_height == now_height:
-                break
-            prev_height = now_height
         # parsing when the scroll down is finished
         soup = BeautifulSoup(driver.page_source, "lxml")
 
@@ -78,5 +87,5 @@ def crawl_news(keywords: list):
 @app.get("/")
 def get_news(request: Request):
     keywords = ["탄핵", "尹", "헌재"]
-    results = crawl_news(keywords)
+    results = main(keywords)
     return templates.TemplateResponse("homepage.html", {"request": request, "news_list": results})
