@@ -23,6 +23,9 @@
             text-align: center;
         }
         .news-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             border-bottom: 1px solid #ddd;
             padding: 10px 0;
         }
@@ -42,6 +45,11 @@
             font-size: 14px;
             color: #555;
         }
+        .bookmark-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -49,12 +57,29 @@
         <h1>관련 뉴스</h1>
         {% for news in news_list %}
         <div class="news-item">
-            <a href="{{ news.link }}" class="news-link" target="_blank">{{ news.title }}</a>
-            <div class="news-meta">
-                {{ news.publisher }} | {{ news.date }} | keyword: {{ news.keyword }}
+            <div>
+                <a href="{{ news.link }}" class="news-link" target="_blank">{{ news.title }}</a>
+                <div class="news-meta">
+                    {{ news.publisher }} | {{ news.date }} | keyword: {{ news.keyword }}
+                </div>
             </div>
+            <img src="/static/images/star_gray.png" class="bookmark-icon" data-saved="false">
         </div>
         {% endfor %}
     </div>
+
+    <script>
+        document.querySelectorAll(".bookmark-icon").forEach(icon => {
+            icon.addEventListener("click", function () {
+                if (this.getAttribute("data-saved") === "false") {
+                    this.src = "/static/images/star_gold.png";
+                    this.setAttribute("data-saved", "true");
+                } else {
+                    this.src = "/static/images/star_gray.png";
+                    this.setAttribute("data-saved", "false");
+                }
+            });
+        });
+    </script>
 </body>
 </html>
