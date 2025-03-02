@@ -45,10 +45,34 @@
             font-size: 14px;
             color: #555;
         }
-        .bookmark-icon {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            padding: 20px;
+        }
+        .pagination a {
+            text-decoration: none;
+            color: #007BFF;
+            padding: 10px 15px;
+            margin: 0 5px;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .pagination a:hover {
+            background-color: #007BFF;
+            color: white;
+        }
+        .pagination a.active {
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+        }
+        .pagination a.disabled {
+            color: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -63,23 +87,30 @@
                     {{ news.publisher }} | {{ news.date }} | keyword: {{ news.keyword }}
                 </div>
             </div>
-            <img src="/static/images/star_gray.png" class="bookmark-icon" data-saved="false">
         </div>
         {% endfor %}
     </div>
+    <!-- Pagenation -->
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="?page=1" class="first">« 첫 페이지</a>
+        <a href="?page={{ page - 1 }}" class="prev">‹ 이전</a>
+        {% else %}
+        <a class="first disabled">« 첫 페이지</a>
+        <a class="prev disabled">‹ 이전</a>
+        {% endif %}
 
-    <script>
-        document.querySelectorAll(".bookmark-icon").forEach(icon => {
-            icon.addEventListener("click", function () {
-                if (this.getAttribute("data-saved") === "false") {
-                    this.src = "/static/images/star_gold.png";
-                    this.setAttribute("data-saved", "true");
-                } else {
-                    this.src = "/static/images/star_gray.png";
-                    this.setAttribute("data-saved", "false");
-                }
-            });
-        });
-    </script>
+        {% for i in range(start_page, end_page + 1) %}
+            <a href="?page={{ i }}" class="{% if i == page %}active{% endif %}">{{ i }}</a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}" class="next">다음 ›</a>
+        <a href="?page={{ total_pages }}" class="last">끝 페이지 »</a>
+        {% else %}
+        <a class="next disabled">다음 ›</a>
+        <a class="last disabled">끝 페이지 »</a>
+        {% endif %}
+    </div>
 </body>
 </html>

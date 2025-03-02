@@ -13,6 +13,8 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+news_cache = {}
+time_constant = 4 # 4 = 1 day, 7 ~ 12 = 1 ~ 6 hour
 def set_chrome_driver(): # Set the Chrome driver options
     options = Options()
     options.add_argument("--headless")  # Optimization 1, Don't print the browser on my screen
@@ -22,7 +24,7 @@ def set_chrome_driver(): # Set the Chrome driver options
 
 def set_time(): # time calculation to set the finding time
     current_time = datetime.now()
-    start = (current_time - timedelta(hours=4)).strftime("%Y.%m.%d.%H.%M")
+    start = (current_time - timedelta(hours=24)).strftime("%Y.%m.%d.%H.%M")
     end = current_time.strftime("%Y.%m.%d.%H.%M")
     return start, end
 
@@ -32,7 +34,7 @@ def scroll_down_bottom(url, driver):
     prev_height = driver.execute_script("return document.body.scrollHeight")
     while True:
         body.send_keys(Keys.PAGE_DOWN)
-        time.sleep(1)
+        time.sleep(4)
 
         now_height = driver.execute_script("return document.body.scrollHeight")
         if prev_height == now_height:
@@ -41,14 +43,13 @@ def scroll_down_bottom(url, driver):
         prev_height = now_height
 
 # main function
-def main(keywords: list):
+def main(keywords: list, start_time: str, end_time:str):
     driver = set_chrome_driver()
-    start, end = set_time()
 
     duplicated = set()
     news_data = []
     for keyword in keywords:
-        url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=0&photo=0&field=0&pd=10&ds={start}&de={end}&docid=&related=0&mynews=1&office_type=3&office_section_code=&news_office_checked=&nso=so%3Ar%2Cp%3Aall&is_sug_officeid=0&office_category=1&service_area=0"
+        url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=0&photo=0&field=0&pd={time_constant}&ds=&de=&docid=&related=0&mynews=1&office_type=3&office_section_code=0&news_office_checked=&nso=so%3Ar%2Cp%3A1d&is_sug_officeid=0&office_category=1&service_area=0"
 
         # Scroll down until no more news exist
         scroll_down_bottom(url, driver)
@@ -73,6 +74,7 @@ def main(keywords: list):
                     date = info_spans[-1].text.strip() # First element from back is a date
 
             # News contents should be unique
+            print(title)
             if title not in duplicated:
                 duplicated.add(title)
                 news_data.append({
@@ -87,7 +89,31 @@ def main(keywords: list):
     return news_data
 
 @app.get("/")
-def get_news(request: Request):
+async def get_news(request: Request, page: int = 1, per_page: int = 10):
     keywords = ["탄핵", "尹", "헌재"]
-    results = main(keywords)
-    return templates.TemplateResponse("homepage.html", {"request": request, "news_list": results})
+    start_time, end_time = set_time()
+
+    cache_key = f"{start_time} - {end_time} - {','.join(keywords)}" # Cache key based on time range and keywords
+    if cache_key not in news_cache:
+        all_news = main(keywords, start_time, end_time)
+        news_cache[cache_key] = all_news
+    else:
+        all_news = news_cache[cache_key]
+
+    #pagenation logic
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+    paged_news = all_news[start_index: end_index]
+    total_pages = (len(all_news) + per_page - 1) // per_page
+    page_range = 5
+    start_page = max(1, page - page_range)
+    end_page = min(total_pages, page + page_range)
+
+    return templates.TemplateResponse("homepage.html",
+                                      {"request": request,
+                                       "news_list": paged_news,
+                                       "page": page,
+                                       "total_pages": total_pages,
+                                       "start_page": start_page,
+                                       "end_page": end_page
+                                       })
