@@ -74,11 +74,34 @@
             color: #ccc;
             cursor: not-allowed;
         }
+        .refresh-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        #refresh-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #refresh-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>관련 뉴스</h1>
+        <div class="refresh-container">
+            <button id="refresh-button">
+                🔄 뉴스 불러오기
+            </button>
+        </div>
         {% for news in news_list %}
         <div class="news-item">
             <div>
@@ -112,5 +135,20 @@
         <a class="last disabled">끝 페이지 »</a>
         {% endif %}
     </div>
+    <script>
+    document.getElementById("refresh-button").addEventListener("click", function() {
+        fetch("/refresh")
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            alert("뉴스 불러오기에 실패했습니다");
+            console.error("Error: ", error);
+        });
+    });
+    </script>
 </body>
 </html>

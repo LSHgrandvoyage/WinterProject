@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
@@ -14,7 +15,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 news_cache = {}
-time_constant = 4 # 4 = 1 day, 7 ~ 12 = 1 ~ 6 hour
+start_time, end_time = None, None
+time_constant = 4 # 4 = 1 day, 7 ~ 12 = 1 ~ 6 hour before
+
 def set_chrome_driver(): # Set the Chrome driver options
     options = Options()
     options.add_argument("--headless")  # Optimization 1, Don't print the browser on my screen
@@ -34,7 +37,7 @@ def scroll_down_bottom(url, driver):
     prev_height = driver.execute_script("return document.body.scrollHeight")
     while True:
         body.send_keys(Keys.PAGE_DOWN)
-        time.sleep(4)
+        time.sleep(1)
 
         now_height = driver.execute_script("return document.body.scrollHeight")
         if prev_height == now_height:
@@ -49,7 +52,7 @@ def main(keywords: list, start_time: str, end_time:str):
     duplicated = set()
     news_data = []
     for keyword in keywords:
-        url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=0&photo=0&field=0&pd={time_constant}&ds=&de=&docid=&related=0&mynews=1&office_type=3&office_section_code=0&news_office_checked=&nso=so%3Ar%2Cp%3A1d&is_sug_officeid=0&office_category=1&service_area=0"
+        url = f"https://search.naver.com/search.naver?where=news&query={keyword}&sm=tab_opt&sort=1&photo=0&field=0&pd={time_constant}&ds=&de=&docid=&related=0&mynews=1&office_type=3&office_section_code=0&news_office_checked=&nso=so%3Ar%2Cp%3A1d&is_sug_officeid=0&office_category=1&service_area=0"
 
         # Scroll down until no more news exist
         scroll_down_bottom(url, driver)
@@ -88,12 +91,18 @@ def main(keywords: list, start_time: str, end_time:str):
     driver.quit()
     return news_data
 
-@app.get("/")
-async def get_news(request: Request, page: int = 1, per_page: int = 10):
-    keywords = ["탄핵", "尹", "헌재"]
+@app.on_event("startup")
+async def set_first_time():
+    global start_time, end_time
     start_time, end_time = set_time()
 
+@app.get("/")
+async def get_news(request: Request, page: int = 1, per_page: int = 10):
+    global start_time, end_time
+    keywords = ["탄핵", "尹", "헌재"]
+
     cache_key = f"{start_time} - {end_time} - {','.join(keywords)}" # Cache key based on time range and keywords
+
     if cache_key not in news_cache:
         all_news = main(keywords, start_time, end_time)
         news_cache[cache_key] = all_news
@@ -117,3 +126,14 @@ async def get_news(request: Request, page: int = 1, per_page: int = 10):
                                        "start_page": start_page,
                                        "end_page": end_page
                                        })
+
+@app.get("/refresh")
+async def refresh():
+    global news_cache, start_time, end_time
+    keywords = ["탄핵", "尹", "헌재"]
+
+    cache_key = f"{start_time} - {end_time} - {','.join(keywords)}"
+    all_news = main(keywords, start_time, end_time)
+    news_cache[cache_key] = all_news
+
+    return JSONResponse(content={"success": True})
