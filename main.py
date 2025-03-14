@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -9,6 +9,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
+from pydantic import BaseModel
+import database
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
