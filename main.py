@@ -130,7 +130,7 @@ async def get_news(request: Request, page: int = 1, per_page: int = 10):
                                        })
 
 @app.get("/refresh")
-async def refresh():
+def refresh():
     global news_cache, start_time, end_time
     keywords = ["탄핵", "尹", "헌재"]
 

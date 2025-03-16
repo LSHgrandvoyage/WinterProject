@@ -4,7 +4,7 @@ from sqlalchemy import text
 import asyncio
 
 DB_USER = "postgres"
-DB_PASSWORD = "apdrnlsdl1"
+DB_PASSWORD = "password"
 DB_HOST = "localhost"
 DB_PORT = "5432"
 DB_NAME = "postgres"
