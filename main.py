@@ -23,6 +23,9 @@ def set_chrome_driver(): # Set the Chrome driver options
     options.add_argument("--headless")  # Optimization 1, Don't print the browser on my screen
     options.add_argument("--disable-gpu")  # Optimization 2
     options.add_argument("--disable-extensions")  # Optimization 3
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage") # For docker
+
     return webdriver.Chrome(options=options)
 
 def set_time(): # time calculation to set the finding time
@@ -33,8 +36,10 @@ def set_time(): # time calculation to set the finding time
 
 def scroll_down_bottom(url, driver):
     driver.get(url)
+
     body = driver.find_element(By.TAG_NAME, "body")
     prev_height = driver.execute_script("return document.body.scrollHeight")
+
     while True:
         body.send_keys(Keys.PAGE_DOWN)
         time.sleep(1)
@@ -62,6 +67,7 @@ def main(keywords: list, start_time: str, end_time:str):
 
         # get the news data
         news_items = soup.select(".news_area")
+        print(news_items)
         for item in news_items:
             title_element = item.select_one(".news_tit")
             title = title_element.text.strip() if title_element else "No title"
@@ -99,7 +105,7 @@ async def set_first_time():
 @app.get("/")
 async def get_news(request: Request, page: int = 1, per_page: int = 10):
     global start_time, end_time
-    keywords = ["탄핵", "尹", "헌재"]
+    keywords = ["삼성", "SK"]
 
     cache_key = f"{start_time} - {end_time} - {','.join(keywords)}" # Cache key based on time range and keywords
 
@@ -130,7 +136,7 @@ async def get_news(request: Request, page: int = 1, per_page: int = 10):
 @app.get("/refresh")
 async def refresh():
     global news_cache, start_time, end_time
-    keywords = ["탄핵", "尹", "헌재"]
+    keywords = ["삼성", "SK"]
 
     cache_key = f"{start_time} - {end_time} - {','.join(keywords)}"
     all_news = main(keywords, start_time, end_time)

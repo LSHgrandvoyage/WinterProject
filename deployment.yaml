@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-crawler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: news-crawler
+  template:
+    metadata:
+      labels:
+        app: news-crawler
+    spec:
+      containers:
+      - name: news-crawler
+        image: leesh1268/news-crawler:1.0
+        ports:
+        - containerPort: 8000
+        securityContext:
+          privileged: true
